@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e
+
+stackio --auth normalauth --config service/auth.json --port 8090 &
+python service/app.py &
+
+pushd static
+python -m SimpleHTTPServer &
+popd
+
+echo "Retaliator app started. Navigate your browser to http://localhost:8000."
+
+function control_c {
+    kill `jobs -p`
+    exit $?
+}
+
+trap control_c SIGINT
+while true; do read x; done

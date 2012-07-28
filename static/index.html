@@ -1,0 +1,116 @@
+<html>
+    <head>
+        <title>stack.io retaliator</title>
+
+        <link type="text/css" rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
+        
+        <style type="text/css">
+            #keys {
+                text-align: center;
+            }
+
+            #crosshairs {
+                position: absolute;
+                left: 92;
+                top: 42;
+            }
+        </style>
+
+        <script type="text/javascript" src="lib/jquery.min.js"></script>
+        <script type="text/javascript" src="stack.io.js"></script>
+        <script type="text/javascript" src="lib/bootstrap/js/bootstrap.min.js"></script>
+    </head>
+
+    <body>
+        <h1>stack.io retaliator</h1>
+
+        <div class="row">
+            <div id="stream-container" class="span6">
+                <img id="stream" src="#" alt="video stream" width="460" height="345" />
+                <img id="crosshairs" src="img/crosshairs.png" alt="crosshairs" width="276" height="261" />
+            </div>
+
+            <div id="keys" class="span6">
+            </div>
+        </div>
+    </body>
+
+    <script type="text/javascript">
+    var STREAM_LOCATION = "http://" + window.location.hostname + ":8080/1/stream.mjpg";
+    var DEFAULT_OPACITY = 0.5;
+    var ACTIVE_OPACITY = 1.0;
+    var DELTA = 100;
+    var retaliator = null;
+
+    $("#stream").attr("src", STREAM_LOCATION);
+
+    function press(key) {
+        var args = {
+            w: ["up", DELTA],
+            a: ["left", DELTA],
+            s: ["down", DELTA],
+            d: ["right", DELTA],
+            enter: ["fire", 1],
+        }[key];
+
+        retaliator[args[0]](args[1], function() {});
+
+        $("#key-" + key).stop().fadeTo(100, ACTIVE_OPACITY, function() {
+            $(this).fadeTo(1000, DEFAULT_OPACITY);
+        });
+    }
+
+    function setupButtons() {
+        var keys = ["w", "a", "s", "d", "enter"];
+
+        for(var i=0; i<keys.length; i++) {
+            var key = keys[i];
+
+            var a = $("<a>")
+                .attr("href", "javascript:press('" + key + "')");
+
+            var img = $("<img class='key'>")
+                .attr("id", "key-" + key)
+                .attr("src", "img/" + key + ".png")
+                .attr("alt", key);
+
+            a.append(img);
+            $("#keys").append(a);
+            if(i == 0 || i == 3) $("#keys").append($("<br/>"));
+
+            $("#key-" + key).fadeTo(0, DEFAULT_OPACITY);
+        }
+
+        $("body").keypress(function(e) {
+            //Until String.fromCharCode, this will handle enter as well
+            var keyMap = { 119: "w", 97: "a", 115: "s", 100: "d", 13: "enter" }
+            var key = keyMap[e.which];
+            if(key) press(key);
+        });
+    }
+
+    stack.io({host: "http://" + window.location.hostname + ":8090", timeout: 5}, function(error, client) {
+        if(error) {
+            console.error(error);
+            return;
+        }
+
+        client.login("demo", "demo-password", function(error) {
+            if(error) {
+                console.error(error);
+                return;
+            }
+
+            client.use("retaliator", function(error, client) {
+                if(error) {
+                    console.error(error);
+                    return;
+                }
+
+                retaliator = client;
+                $(setupButtons);
+            });
+        });
+    });
+    </script>
+</html>
